@@ -92,8 +92,7 @@ printf "\n\tAdding namespace declaration"
 for file in `ls $OUTPUT/2-pre/`
 do
     #printf $file
-    #sed -i 's/<TEI>/<TEI xmlns=\"http://www.tei-c.org/ns/1.0\">/'  $OUTPUT/2-pre/$file
-    awk 'NR==2 {$0="<TEI xmlns=\"http://www.tei-c.org/ns/1.0\">"} 1' $OUTPUT/2-pre/$file > tmpfile && mv tmpfile $OUTPUT/2-pre/$file
+    sed -i 's/<TEI>/<TEI xmlns=\"http:\/\/www.tei-c.org\/ns\/1.0\">/' $OUTPUT/2-pre/$file
     printf "."
 done
 
