@@ -35,7 +35,6 @@ export NORM_MOD=($TPEN2TEI_PATH/Milestones.Milestones) #Milestones/Milestones.py
 export COLLATEX=(/collatex/collatex-tools/target/collatex-tools-1.8-SNAPSHOT.jar) # collatex jar
 MILESTONE_FILE="milestones.csv"
 ABBR_FILE="abbr.csv"
-STEMMAREST_URL=(http://stemmarest:8080/stemmarest)
 
 printf "\nInput directory:" $INPUT
 
@@ -183,23 +182,4 @@ done
 printf "\n\tFiles (JSON): `ls -l $OUTPUT/4-collations/collation* | wc -l | xargs` (See $OUTPUT/4-collations/)\n"
 ls -l $OUTPUT/4-collations/*
 
-echo "\nUploading collations to Stemmaweb ($STEMMAREST_URL)..."
-#create user
-curl --request PUT --header "Content-Type: application/json" --data '{ "role": "user", "id":"user@example.org", "email":"user@example.org", "passphrase":"d0d4f76c2ba30e1eb0bdfe544df5ec8e6951872106eb1bd3d7f9208993f28c69" }' $STEMMAREST_URL/user/user@example.org
-
-#create tradition (output folder name)
-TRADITION_NAME="auto_docker_$(basename $OUTPUT)"
-curl --request POST --form "name=$TRADITION_NAME" --form "public=no" --form "userId=user@example.org" --form "empty=no" $STEMMAREST_URL/tradition > create-tradition.response
-
-TRADITION_ID=`jq ".tradId" create-tradition.response | sed s/\"//g`
-
-#upload collations (JSON format)
-echo ""
-for i in `ls $OUTPUT/4-collations/*.json`
-do
-  SECTION_NAME=$(basename $i)
-  # echo "curl --request POST --form "name=$SECTION_NAME" --form "file=@$i" --form "filetype=cxjson" $STEMMAREST_URL/tradition/$TRADITION_ID/section;"
-  curl --request POST --form "name=$SECTION_NAME" --form "file=@$i" --form "filetype=cxjson" $STEMMAREST_URL/tradition/$TRADITION_ID/section;
-done
-
-printf "To see the results, login to localhost:3000 with user@example.org/UserPass"
+printf "Done."
