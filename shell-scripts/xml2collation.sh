@@ -13,7 +13,7 @@ if [[ ($# -lt 2) || ($# -ge 3 && $3 != "-m" ) ]]
 then
     printf "Usage:\tinputfolder outputfolder [-m]"
     printf "\n\tinputfolder \t-- path to XML transcription files"
-    printf "\n\toutputfolder \t-- path to destination folder (twill be generated if needed)"
+    printf "\n\toutputfolder \t-- path to destination folder (will be generated if needed)"
     printf "\n\toptionnal -m flag \t-- treat milestones one by one"
     exit 0
 fi
@@ -36,6 +36,14 @@ export COLLATEX=(/collatex/collatex-tools/target/collatex-tools-1.8-SNAPSHOT.jar
 MILESTONE_FILE="milestones.csv"
 ABBR_FILE="abbr.csv"
 INDEX_FILE="index.txt"
+STEMMAREST_FILE="stemmaresturl.txt"
+
+export STEMMAREST_URL=""
+if [ -f $STEMMAREST_FILE ] # file exists
+then
+    read STEMMAREST_URL < $STEMMAREST_FILE
+    printf "\n$STEMMAREST_FILE file found; URL read: $STEMMAREST_URL\n"
+fi
 
 if [ ! -f $INDEX_FILE ] # index file does not exist
 then
@@ -43,8 +51,7 @@ then
     printf "\nScanning current directory..."
     find $INPUT -name "*.xml" >> $INDEX_FILE
 else
-    printf "\nScanning index.txt..."
-    printf "\nEntries: `grep -c '' $INDEX_FILE`"
+    printf "\n$INDEX_FILE file found; number of lines read: `grep -c '' $INDEX_FILE`"
 fi
 
 if [ ! -f $INDEX_FILE ] # index file still does not exist
@@ -188,7 +195,6 @@ if [ "$MST_FLAG" == "-m" ]
 then
   printf " (milestone by milestone)"
 fi
-printf "..."
 
 if [ ! -d "$OUTPUT/4-collations" ]; then mkdir $OUTPUT/4-collations/; else rm $OUTPUT/4-collations/*; fi
 
@@ -198,7 +204,29 @@ do
   java -jar -Dnashorn.args="--no-deprecation-warning" $COLLATEX $OUTPUT/3-collatex-input/$file -t -f json > $OUTPUT/4-collations/collation-$file
   if [ "$MST_FLAG" == "-m" ]; then printf "."; fi
 done
-printf "\n\tFiles (JSON): `ls -l $OUTPUT/4-collations/collation* | wc -l | xargs` (See $OUTPUT/4-collations/)\n"
+printf "\nFiles (JSON): `ls -l $OUTPUT/4-collations/collation* | wc -l | xargs` (See $OUTPUT/4-collations/)\n"
 ls -l $OUTPUT/4-collations/*
 
-printf "Done."
+if [ -z "$STEMMAREST_URL" ] # empty
+then
+    printf "Results stored to folder: $OUTPUT\n"
+    exit 0
+fi
+
+printf "\nUploading collations to Stemmaweb ($STEMMAREST_URL)..."
+
+#create tradition (output folder name)
+TRADITION_NAME="auto_docker_$(basename $OUTPUT)"
+curl --request POST --form "name=$TRADITION_NAME" --form "public=no" --form "userId=user@example.org" --form "empty=no" $STEMMAREST_URL/tradition > create-tradition.response
+
+TRADITION_ID=`jq ".tradId" create-tradition.response | sed s/\"//g`
+
+#upload collations (JSON format)
+printf "\n"
+for i in `ls $OUTPUT/4-collations/*.json`
+do
+  SECTION_NAME=$(basename $i)
+  curl --request POST --form "name=$SECTION_NAME" --form "file=@$i" --form "filetype=cxjson" $STEMMAREST_URL/tradition/$TRADITION_ID/section;
+done
+
+printf "\nDone.\n"
