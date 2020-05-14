@@ -35,15 +35,30 @@ export NORM_MOD=($TPEN2TEI_PATH/Milestones.Milestones) #Milestones/Milestones.py
 export COLLATEX=(/collatex/collatex-tools/target/collatex-tools-1.8-SNAPSHOT.jar) # collatex jar
 MILESTONE_FILE="milestones.csv"
 ABBR_FILE="abbr.csv"
+INDEX_FILE="index.txt"
 
-printf "\nInput directory:" $INPUT
+if [ ! -f $INDEX_FILE ] # index file does not exist
+then
+    # take all XML files in INPUT folder; create index.txt
+    printf "\nScanning current directory..."
+    find $INPUT -name "*.xml" >> $INDEX_FILE
+else
+    printf "\nScanning index.txt..."
+    printf "\nEntries: `grep -c '' $INDEX_FILE`"
+fi
 
-if find $INPUT -name "*.xml" | wc -l | grep -qw "0";
+if [ ! -f $INDEX_FILE ] # index file still does not exist
+then
+    printf "\nNo input files found."
+    exit 0
+fi
+
+if grep ".xml" $INDEX_FILE | wc -l | grep -qw "0";
 then
     printf "\nNo XML files found."
     exit 0
 else
-    printf "\n`find $INPUT -name "*.xml" | wc -l` XML files found."
+    printf "\nXML files: `grep \".xml\" $INDEX_FILE | wc -l | xargs`"
 fi
 
 if [ ! -d "$OUTPUT/1-wf/" ]; then mkdir $OUTPUT/1-wf/; else rm $OUTPUT/1-wf/*; fi
@@ -52,20 +67,24 @@ if [ ! -d "$OUTPUT/2-pre/" ]; then mkdir $OUTPUT/2-pre/; else rm $OUTPUT/2-pre/*
 
 # XMLWF
 printf "\n\nChecking well-formedness..."
-for file in `find $INPUT -name "*.xml"`
+for file in `grep ".xml" $INDEX_FILE`
 do
-    if xmlwf $file | wc -l | grep -qw "0"; #well-formed
+    if [ -f $file ]
     then
-        cp $file $OUTPUT/1-wf/
-        cp $file $OUTPUT/2-pre/
-    else
-        cp $file $OUTPUT/1-nwf/
+        # file exists
+        if xmlwf $file | wc -l | grep -qw "0"; #well-formed
+        then
+            cp $file $OUTPUT/1-wf/
+            cp $file $OUTPUT/2-pre/
+        else
+            cp $file $OUTPUT/1-nwf/
+        fi
     fi
 done
-printf "\n`find $OUTPUT/1-wf/ -name "*.xml" | wc -l` well-formed files found\n"
+printf "\n`find $OUTPUT/1-wf/ -name "*.xml" | wc -l` well-formed file(s) found\n"
 ls $OUTPUT/1-wf/
 
-printf "\n`find $OUTPUT/1-nwf/ -name "*.xml" | wc -l` ill-formed files found\n"
+printf "\n`find $OUTPUT/1-nwf/ -name "*.xml" | wc -l` ill-formed file(s) found\n"
 ls $OUTPUT/1-nwf/
 
 # UCONV
