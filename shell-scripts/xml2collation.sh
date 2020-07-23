@@ -129,6 +129,8 @@ do
   sed -r -i 's/([^ ])(<pb .*\/> *<lb n="[[:alnum:]]*" *\/>$)/\1 \2/g' $OUTPUT/2-pre/$file # word pb lb newline: add space after word
   sed -r -i 's/([^ ])(<cb .*\/> *<lb n="[[:alnum:]]*" *\/>$)/\1 \2/g' $OUTPUT/2-pre/$file # word cb lb newline: add space after word
   sed -r -i 's/([^ ])(<lb n="[[:alnum:]]*" *\/>$)/\1 \2/g' $OUTPUT/2-pre/$file # word lb newline: add space after word
+  sed -r -i 's/([^ ])(<lb *\/>$)/\1 \2/g' $OUTPUT/2-pre/$file # idem, when lb has no n attribute
+
   sed -r -i 's/([^ ])(<lb n="[[:alnum:]]*" *\/>)\s/\1 \2/g' $OUTPUT/2-pre/$file # word lb space: move space after word
   sed -r -i 's/([^ ])(<lb *\/>)\s/\1 \2/g' $OUTPUT/2-pre/$file # idem, when lb has no n attribute
   printf "."
