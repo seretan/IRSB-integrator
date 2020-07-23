@@ -159,6 +159,16 @@ do
   printf "."
 done
 
+# printf "\n\tInserting space between choice separated by newline only"
+for file in `ls $OUTPUT/2-pre/`
+do
+  sed -r -i ':a;N;$!ba;s/\n/XXX/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/(<\/choice>)(XXX[[:space:]]+<choice)/\1 \2/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/XXX/\n/g' $OUTPUT/2-pre/$file
+  # circumvent match across lines
+  # printf "."
+done
+
 if [ ! -f $ABBR_FILE ]
 then
   printf "\nResetting abbreviation file"
