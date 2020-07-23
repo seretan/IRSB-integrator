@@ -161,7 +161,7 @@ done
 
 if [ ! -f $ABBR_FILE ]
 then
-  printf "Resetting abbreviation file"
+  printf "\nResetting abbreviation file"
   cp /tpen2tei/Milestones/abbr.csv .
 fi
 
