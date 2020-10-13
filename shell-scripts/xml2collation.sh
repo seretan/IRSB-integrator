@@ -218,12 +218,25 @@ fi
 
 if [ ! -d "$OUTPUT/4-collations" ]; then mkdir $OUTPUT/4-collations/; else rm $OUTPUT/4-collations/*; fi
 
+SECONDS=0
 for file in `ls $OUTPUT/3-collatex-input/`
 do
   # -t for token by token: -t -f json >
   java -jar -Dnashorn.args="--no-deprecation-warning" $COLLATEX $OUTPUT/3-collatex-input/$file -t -f json > $OUTPUT/4-collations/collation-$file
   if [ "$MST_FLAG" == "-m" ]; then printf "."; fi
 done
+if (( $SECONDS > 3600 )) ; then
+    let "hours=SECONDS/3600"
+    let "minutes=(SECONDS%3600)/60"
+    let "seconds=(SECONDS%3600)%60"
+    echo "Collation completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
+elif (( $SECONDS > 60 )) ; then
+    let "minutes=(SECONDS%3600)/60"
+    let "seconds=(SECONDS%3600)%60"
+    echo "Collation completed in $minutes minute(s) and $seconds second(s)"
+else
+    echo "Collation completed in $SECONDS seconds"
+fi
 printf "\nFiles (JSON): `ls -l $OUTPUT/4-collations/collation* | wc -l | xargs` (See $OUTPUT/4-collations/)\n"
 ls -l $OUTPUT/4-collations/*
 
