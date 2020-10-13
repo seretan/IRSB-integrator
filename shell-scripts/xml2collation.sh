@@ -207,6 +207,7 @@ then
 
   printf "\nMILESTONES (JSON): `ls -l $OUTPUT/3-collatex-input/milestone* | wc -l | xargs` (See $OUTPUT/3-collatex-input/)\n"
 fi
+if [ `du -s $OUTPUT/3-collatex-input/ | awk '{print $1}'` -eq 0 ]; then printf "\nTokenization failed. Stopping."; exit 0; fi
 ls -l $OUTPUT/3-collatex-input/*.json
 
 #COLLATEX
