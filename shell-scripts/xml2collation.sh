@@ -238,6 +238,7 @@ else
     echo "Collation completed in $SECONDS seconds"
 fi
 printf "\nFiles (JSON): `ls -l $OUTPUT/4-collations/collation* | wc -l | xargs` (See $OUTPUT/4-collations/)\n"
+if [ `du -s $OUTPUT/4-collations/ | awk '{print $1}'` -eq 0 ]; then printf "\nCollation failed. Stopping."; exit 0; fi
 ls -l $OUTPUT/4-collations/*
 
 if [ -z "$STEMMAREST_URL" ] # empty
