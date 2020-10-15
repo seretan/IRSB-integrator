@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-#  Container version of IRSB-integrator.sh
-#  From transcription to collation (xml > xmlwf > uconv > tpe2tei > collatex).
+#  Container version of pipeline (IRSB-integrator.sh).
+#  From transcription to collation (xml > xmlwf > uconv > tpen2tei > collatex > stemmarest upload).
 #  Container is a ubuntu image with Java and Python 3 installed.
 #
 #
@@ -207,7 +207,7 @@ then
 
   printf "\nMILESTONES (JSON): `ls -l $OUTPUT/3-collatex-input/milestone* | wc -l | xargs` (See $OUTPUT/3-collatex-input/)\n"
 fi
-if [ `du -s $OUTPUT/3-collatex-input/ | awk '{print $1}'` -eq 0 ]; then printf "\nTokenization failed. Stopping."; exit 0; fi
+if [ `du -s $OUTPUT/3-collatex-input/ | awk '{print $1}'` -eq 0 ]; then printf "\nTokenization failed. Stopping.\n"; exit 0; fi
 ls -l $OUTPUT/3-collatex-input/*.json
 
 #COLLATEX
@@ -230,25 +230,25 @@ if (( $SECONDS > 3600 )) ; then
     let "hours=SECONDS/3600"
     let "minutes=(SECONDS%3600)/60"
     let "seconds=(SECONDS%3600)%60"
-    echo "Collation completed in $hours hour(s), $minutes minute(s) and $seconds second(s)"
+    printf "\nCollateX run time: $hours hour(s), $minutes minute(s) and $seconds second(s)"
 elif (( $SECONDS > 60 )) ; then
     let "minutes=(SECONDS%3600)/60"
     let "seconds=(SECONDS%3600)%60"
-    echo "Collation completed in $minutes minute(s) and $seconds second(s)"
+    printf "\nCollateX run time: $minutes minute(s) and $seconds second(s)"
 else
-    echo "Collation completed in $SECONDS seconds"
+    printf "\nCollateX run time: $SECONDS seconds"
 fi
 printf "\nFiles (JSON): `ls -l $OUTPUT/4-collations/collation* | wc -l | xargs` (See $OUTPUT/4-collations/)\n"
-if [ `du -s $OUTPUT/4-collations/ | awk '{print $1}'` -eq 0 ]; then printf "\nCollation failed. Stopping."; exit 0; fi
+if [ `du -s $OUTPUT/4-collations/ | awk '{print $1}'` -eq 0 ]; then printf "\nCollation failed. Stopping.\n"; exit 0; fi
 ls -l $OUTPUT/4-collations/*
 
 if [ -z "$STEMMAREST_URL" ] # empty
 then
-    printf "Results stored to folder: $OUTPUT\n"
+    printf "\nResults stored to folder: $OUTPUT\n"
     exit 0
 fi
 
-printf "\nUploading collations to Stemmaweb ($STEMMAREST_URL)..."
+printf "\nUploading collations to Stemmaweb ($STEMMAREST_URL)...\n"
 
 #create tradition (output folder name)
 TRADITION_NAME="auto_docker_$(basename $OUTPUT)"
@@ -257,11 +257,10 @@ curl --request POST --form "name=$TRADITION_NAME" --form "public=no" --form "use
 TRADITION_ID=`jq ".tradId" create-tradition.response | sed s/\"//g`
 
 #upload collations (JSON format)
-printf "\n"
 for i in `ls $OUTPUT/4-collations/*.json`
 do
   SECTION_NAME=$(basename $i)
   curl --request POST --form "name=$SECTION_NAME" --form "file=@$i" --form "filetype=cxjson" $STEMMAREST_URL/tradition/$TRADITION_ID/section;
 done
 
-printf "\nDone.\n"
+printf "\nDone. Check out the results at $STEMMAREST_URL.\n"
