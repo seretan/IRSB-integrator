@@ -34,6 +34,7 @@ export TPEN2TEI_PATH=(/tpen2tei)
 export NORM_MOD=($TPEN2TEI_PATH/Milestones.Milestones) #Milestones/Milestones.py
 export COLLATEX=(/collatex/collatex-tools/target/collatex-tools-1.8-SNAPSHOT.jar) # collatex jar
 MILESTONE_FILE="milestones.csv"
+MILESTONE_JSON="milestones.json"
 ABBR_FILE="abbr.csv"
 INDEX_FILE="index.txt"
 STEMMAREST_FILE="stemmaresturl.txt"
@@ -82,7 +83,6 @@ do
         if xmlwf $file | wc -l | grep -qw "0"; #well-formed
         then
             cp $file $OUTPUT/1-wf/
-            cp $file $OUTPUT/2-pre/
         else
             cp $file $OUTPUT/1-nwf/
         fi
@@ -94,19 +94,32 @@ ls $OUTPUT/1-wf/
 printf "\n`find $OUTPUT/1-nwf/ -name "*.xml" | wc -l` ill-formed file(s) found\n"
 ls $OUTPUT/1-nwf/
 
-# UCONV
-printf "\nUnicode normalization...\n"
+# xml:id check (must be present and non-empty)
+printf "\n\nChecking sigla..."
 for file in `ls $OUTPUT/1-wf/`
 do
-    # printf "uconv -x any-nfc -f UTF-8 -o tmpuconv $OUTPUT/1-wf/$file && mv tmpuconv $OUTPUT/1-wf/$file"
-    uconv -x any-nfc -f UTF-8 -o tmpuconv $OUTPUT/1-wf/$file && mv tmpuconv $OUTPUT/1-wf/$file
+    if `grep -qE "xml:id=\"[^ ]+\"" $OUTPUT/1-wf/$file`; # sigil exists and is not empty and does not contain space
+    then
+        cp $OUTPUT/1-wf/$file $OUTPUT/2-pre/
+    else
+        printf "\n\tSigil absent from: $file"
+    fi
+done
+# ls $OUTPUT/2-pre/
+
+printf "\nProcessing `find $OUTPUT/2-pre/ -name "*.xml" | wc -l | xargs` file(s)\n"
+# UCONV
+printf "\nUnicode normalization...\n"
+for file in `ls $OUTPUT/2-pre/`
+do
+    uconv -x any-nfc -f UTF-8 -o tmpuconv $OUTPUT/2-pre/$file && mv tmpuconv $OUTPUT/2-pre/$file
 done
 
 #TPEN2TEI
 printf "\nPre-processing XML files..."
 
 printf "\n\tRemoving DOCTYPE declaration"
-for file in `ls $OUTPUT/1-wf/`
+for file in `ls $OUTPUT/2-pre/`
 do
     #printf $file
     sed -i '/DOCTYPE/d' $OUTPUT/2-pre/$file
@@ -154,9 +167,9 @@ done
 printf "\n\tInserting space between abbr separated by newline only"
 for file in `ls $OUTPUT/2-pre/`
 do
-  sed -r -i ':a;N;$!ba;s/\n/XXX/g' $OUTPUT/2-pre/$file
-  sed -r -i 's/(<\/abbr>)(XXX[[:space:]]+<abbr)/\1 \2/g' $OUTPUT/2-pre/$file
-  sed -r -i 's/XXX/\n/g' $OUTPUT/2-pre/$file
+  sed -r -i ':a;N;$!ba;s/\n/ÿÿÿ/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/(<\/abbr>)(ÿÿÿ[[:space:]]+<abbr)/\1 \2/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/ÿÿÿ/\n/g' $OUTPUT/2-pre/$file
   # circumvent match across lines
   printf "."
 done
@@ -164,9 +177,9 @@ done
 # printf "\n\tInserting space between choice separated by newline only"
 for file in `ls $OUTPUT/2-pre/`
 do
-  sed -r -i ':a;N;$!ba;s/\n/XXX/g' $OUTPUT/2-pre/$file
-  sed -r -i 's/(<\/choice>)(XXX[[:space:]]+<choice)/\1 \2/g' $OUTPUT/2-pre/$file
-  sed -r -i 's/XXX/\n/g' $OUTPUT/2-pre/$file
+  sed -r -i ':a;N;$!ba;s/\n/ÿÿÿ/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/(<\/choice>)(ÿÿÿ[[:space:]]+<choice)/\1 \2/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/ÿÿÿ/\n/g' $OUTPUT/2-pre/$file
   # circumvent match across lines
   # printf "."
 done
@@ -204,8 +217,31 @@ then
   # printf "\n\tMilestone creation and tokenization using teixml2collatex.py..."
   printf "\n\nRunning TEIXML2COLLATEX...\n"
   python3 $TPEN2TEI_PATH/teixml2collatex.py $OUTPUT/2-pre/ $OUTPUT/3-collatex-input/ -c $NORM_MOD
-
   printf "\nMILESTONES (JSON): `ls -l $OUTPUT/3-collatex-input/milestone* | wc -l | xargs` (See $OUTPUT/3-collatex-input/)\n"
+
+  printf "\nGenerating special file for milestone collation (milestones.json)...\n"
+  > $MILESTONE_JSON
+  printf "\n{\"witnesses\": [" >> $MILESTONE_JSON
+  for file in `find $OUTPUT/2-pre/ -name "*.xml"`; do
+    if `grep -qE "milestone\sn=\".+\"" $file`; then # file contains milestones
+        printf "{\"id\": \"`sed -rn 's/.*xml:id="([^"]*)".*/\1/p' $file | xargs`\"," >> $MILESTONE_JSON
+
+        printf "\"tokens\": [" >> $MILESTONE_JSON
+        for milestone in `sed -rn 's/.*milestone\sn="([^"]*)".*/\1/p' $file | xargs`
+        do
+          printf "{\"t\": \"$milestone\", \"n\": \"$milestone\", \"lit\": \"$milestone\"}," >> $MILESTONE_JSON;
+        done
+        sed -i '$s/.$//' $MILESTONE_JSON #delete last char
+
+        printf "]}," >> $MILESTONE_JSON
+    fi
+  done
+  sed -i '$s/.$//' $MILESTONE_JSON #delete last char
+
+  printf "]}" >> $MILESTONE_JSON
+  jq . $MILESTONE_JSON > $OUTPUT/3-collatex-input/$MILESTONE_JSON
+  rm $MILESTONE_JSON
+  ls -l $OUTPUT/3-collatex-input/$MILESTONE_JSON
 fi
 if [ `du -s $OUTPUT/3-collatex-input/ | awk '{print $1}'` -eq 0 ]; then printf "\nTokenization failed. Stopping.\n"; exit 0; fi
 ls -l $OUTPUT/3-collatex-input/*.json
