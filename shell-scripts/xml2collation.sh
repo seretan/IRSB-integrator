@@ -124,6 +124,11 @@ if [ ! "$(wc -l tmpsiglas | awk '{print $1}')" -eq "$(sort -u tmpsiglas | wc -l)
 fi
 rm tmpsiglas
 
+if [ `find $OUTPUT/2-pre/ -name "*.xml" | wc -l | xargs` == 0 ] ; then
+    printf "\n\nError (grave): No files left to process; all files have issues. Stopping.\n";
+    exit 0;
+fi
+
 printf "\nProcessing `find $OUTPUT/2-pre/ -name "*.xml" | wc -l | xargs` file(s)\n"
 # UCONV
 printf "\nUnicode normalization...\n"
