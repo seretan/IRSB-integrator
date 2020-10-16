@@ -95,16 +95,19 @@ printf "\n`find $OUTPUT/1-nwf/ -name "*.xml" | wc -l` ill-formed file(s) found\n
 ls $OUTPUT/1-nwf/
 
 # xml:id check (must be present and non-empty)
-printf "\n\nChecking sigla..."
+printf "\n\nChecking problematic sigla..."
+siglas_ok=true;
 for file in `ls $OUTPUT/1-wf/`
 do
     if `grep -qE "xml:id=\"[^ ]+\"" $OUTPUT/1-wf/$file`; # sigil exists and is not empty and does not contain space
     then
         cp $OUTPUT/1-wf/$file $OUTPUT/2-pre/
     else
-        printf "\n\tSigil absent from: $file"
+        printf "\n\t$file"
+        siglas_ok=false
     fi
 done
+if [ ! "$siglas_ok" = true ]  ; then printf "\nWarning: Problematic siglas found; corresponding transcriptions will be ignored." ; fi;
 # ls $OUTPUT/2-pre/
 
 printf "\nProcessing `find $OUTPUT/2-pre/ -name "*.xml" | wc -l | xargs` file(s)\n"
