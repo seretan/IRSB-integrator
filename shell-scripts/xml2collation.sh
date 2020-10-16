@@ -110,6 +110,19 @@ done
 if [ ! "$siglas_ok" = true ]  ; then printf "\nWarning: Problematic siglas found; corresponding transcriptions will be ignored." ; fi;
 # ls $OUTPUT/2-pre/
 
+# Check duplicate siglas
+touch tmpsiglas
+for file in `find $OUTPUT/2-pre/ -name "*.xml"`; do
+      printf "`sed -rn 's/.*xml:id="([^"]*)".*/\1/p' $file | xargs`\n" >> tmpsiglas
+done
+
+if [ ! "$(wc -l tmpsiglas | awk '{print $1}')" -eq "$(sort -u tmpsiglas | wc -l)" ] ; then
+    printf "\n\nError (grave): Duplicate sigla found (see below). Collation would make no sense. Stopping.\n";
+    printf "`sort tmpsiglas | uniq -c | awk '{if($1>1) {print "\t" $2 " occurs "$1 " times"}}'`\n"
+    exit 0;
+fi
+rm tmpsiglas
+
 printf "\nProcessing `find $OUTPUT/2-pre/ -name "*.xml" | wc -l | xargs` file(s)\n"
 # UCONV
 printf "\nUnicode normalization...\n"
@@ -246,8 +259,7 @@ then
   rm $MILESTONE_JSON
   ls -l $OUTPUT/3-collatex-input/$MILESTONE_JSON
 fi
-if [ `du -s $OUTPUT/3-collatex-input/ | awk '{print $1}'` -eq 0 ]; then printf "\nTokenization failed. Stopping.\n"; exit 0; fi
-ls -l $OUTPUT/3-collatex-input/*.json
+if [ `du -s $OUTPUT/3-collatex-input/ | awk '{print $1}'` -eq 0 ]; then printf "\nError (grave): Tokenization failed. Stopping.\n"; exit 0; fi
 
 #COLLATEX
 printf "\nRunning CollateX"
@@ -278,7 +290,7 @@ else
     printf "\nCollateX run time: $SECONDS seconds"
 fi
 printf "\nFiles (JSON): `ls -l $OUTPUT/4-collations/collation* | wc -l | xargs` (See $OUTPUT/4-collations/)\n"
-if [ `du -s $OUTPUT/4-collations/ | awk '{print $1}'` -eq 0 ]; then printf "\nCollation failed. Stopping.\n"; exit 0; fi
+if [ `du -s $OUTPUT/4-collations/ | awk '{print $1}'` -eq 0 ]; then printf "\nError (grave): Collation failed. Stopping.\n"; exit 0; fi
 ls -l $OUTPUT/4-collations/*
 
 if [ -z "$STEMMAREST_URL" ] # empty
