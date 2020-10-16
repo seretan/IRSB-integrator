@@ -118,7 +118,8 @@ done
 
 if [ ! "$(wc -l tmpsiglas | awk '{print $1}')" -eq "$(sort -u tmpsiglas | wc -l)" ] ; then
     printf "\n\nError (grave): Duplicate sigla found (see below). Collation would make no sense. Stopping.\n";
-    printf "`sort tmpsiglas | uniq -c | awk '{if($1>1) {print "\t" $2 " occurs "$1 " times"}}'`\n"
+    printf "`sort tmpsiglas | uniq -c | awk '{if($1>1) {print "\tSigil <" $2 "> occurs "$1 " times"}}'`\n"
+    rm tmpsiglas
     exit 0;
 fi
 rm tmpsiglas
