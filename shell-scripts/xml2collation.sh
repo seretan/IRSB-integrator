@@ -235,7 +235,7 @@ then
     printf "\nMilestones found: `cat $MILESTONE_FILE | wc -l | xargs`" # xargs to remove spaces
   else
     printf "No milestone found."
-    $MST_FLAG = ""
+    MST_FLAG=""
   fi
 fi
 
