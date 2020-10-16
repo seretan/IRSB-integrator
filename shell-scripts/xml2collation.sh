@@ -208,13 +208,25 @@ fi
 
 if [ "$MST_FLAG" == "-m" ]
 then
-  if [ ! -f $MILESTONE_FILE ] # milestone file does not exists
+  if [ ! -s $MILESTONE_FILE ] # milestone file does not exists or is empty
   then
       printf "\n\nAutomatically retrieving milestones list..."
       for file in `ls $OUTPUT/2-pre/`
       do
         sed -n 's/.*milestone n="\([^"]*\).*/\1/p'  $OUTPUT/2-pre/$file >> $MILESTONE_FILE
       done
+
+      if [ ! -s $MILESTONE_FILE ] ; then
+        # printf "\nError (grave): Milestones missing from trascriptions. Stopping.\n"; exit 0;
+
+        # Automatically insert <milestone> tag after the first <div>
+        printf "\nNo milestones found. Automatically inserting <milestone> tag after the first <div>..."
+        for file in `ls $OUTPUT/2-pre/`
+        do
+          sed -i '0,/<div>/{s/<div>/<div><milestone n=\"1\" \/>/}' $OUTPUT/2-pre/$file
+          sed -n 's/.*milestone n="\([^"]*\).*/\1/p'  $OUTPUT/2-pre/$file >> $MILESTONE_FILE
+        done
+      fi
       sort -u -o $MILESTONE_FILE $MILESTONE_FILE
   fi
 
