@@ -183,6 +183,7 @@ printf "\n\tInserting space at the beginning of paragraphs"
 for file in `ls $OUTPUT/2-pre/`
 do
   sed -r -i 's/(<\/[pP]>)/\1 /g' $OUTPUT/2-pre/$file # add space after <p> or <P>
+  sed -r -i 's/(<\/[pP]>)/\1 /g' $OUTPUT/2-pre/$file # add space after </p> or </P>
   printf "."
 done
 
