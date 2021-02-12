@@ -182,8 +182,8 @@ done
 printf "\n\tInserting space at the beginning of paragraphs"
 for file in `ls $OUTPUT/2-pre/`
 do
-  sed -r -i 's/(<\/[pP]>)/\1 /g' $OUTPUT/2-pre/$file # add space after <p> or <P>
   sed -r -i 's/(<\/[pP]>)/\1 /g' $OUTPUT/2-pre/$file # add space after </p> or </P>
+  sed -r -i 's/(<[pP]>)/\1 /g' $OUTPUT/2-pre/$file # add space after <p> or <P>
   printf "."
 done
 
@@ -202,6 +202,16 @@ for file in `ls $OUTPUT/2-pre/`
 do
   sed -r -i ':a;N;$!ba;s/\n/ÿÿÿ/g' $OUTPUT/2-pre/$file
   sed -r -i 's/(<\/choice>)(ÿÿÿ[[:space:]]+<choice)/\1 \2/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/ÿÿÿ/\n/g' $OUTPUT/2-pre/$file
+  # circumvent match across lines
+  # printf "."
+done
+
+# printf "\n\tInserting space between seg separated by newline only"
+for file in `ls $OUTPUT/2-pre/`
+do
+  sed -r -i ':a;N;$!ba;s/\n/ÿÿÿ/g' $OUTPUT/2-pre/$file
+  sed -r -i 's/(<\/seg>)(ÿÿÿ[[:space:]]+<seg)/\1 \2/g' $OUTPUT/2-pre/$file
   sed -r -i 's/ÿÿÿ/\n/g' $OUTPUT/2-pre/$file
   # circumvent match across lines
   # printf "."
