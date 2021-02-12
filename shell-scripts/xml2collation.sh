@@ -38,6 +38,8 @@ MILESTONE_JSON="milestones.json"
 ABBR_FILE="abbr.csv"
 INDEX_FILE="index.txt"
 STEMMAREST_FILE="stemmaresturl.txt"
+USER_FILE="user.txt"
+USER="user@example.org"
 
 export STEMMAREST_URL=""
 if [ -f $STEMMAREST_FILE ] # file exists
@@ -53,6 +55,11 @@ then
     find $INPUT -name "*.xml" >> $INDEX_FILE
 else
     printf "\n$INDEX_FILE file found; number of lines read: `grep -c '' $INDEX_FILE`"
+fi
+
+if [ -f $USER_FILE ] # user file exists
+then
+    printf "\n$USER_FILE file found; number of lines read: `grep -c '' $USER_FILE`"
 fi
 
 if [ ! -f $INDEX_FILE ] # index file still does not exist
@@ -272,7 +279,7 @@ then
         printf "{\"id\": \"`sed -rn 's/.*xml:id="([^"]*)".*/\1/p' $file | xargs`\"," >> $MILESTONE_JSON
 
         printf "\"tokens\": [" >> $MILESTONE_JSON
-        for milestone in `sed -rn 's/.*milestone\sn="([^"]*)".*/\1/p' $file | xargs`
+        for milestone in `sed -rn 's/.*milestone\sn="([^"]*)".*/\1/p' $file`
         do
           printf "{\"t\": \"$milestone\", \"n\": \"$milestone\", \"lit\": \"$milestone\"}," >> $MILESTONE_JSON;
         done
@@ -330,9 +337,24 @@ fi
 
 printf "\nUploading collations to Stemmaweb ($STEMMAREST_URL)...\n"
 
+if [ ! -f $USER_FILE ] # user file does not exist
+then
+  # create file with default user
+  printf "user@example.org:d0d4f76c2ba30e1eb0bdfe544df5ec8e6951872106eb1bd3d7f9208993f28c69\n" > $USER_FILE
+  printf "\nUser created: user@example.org (default)\n"
+fi
+
+#create user(s)
+printf "Reading user data from $USER_FILE...\n"
+if IFS=":" read USER PASSPHRASE
+then
+  printf "Creating user <$USER>...\n"
+  curl --request PUT --header "Content-Type: application/json" --data '{ "role": "user", "id":"'$USER'", "email":"'$USER'", "passphrase":"'$PASSPHRASE'" }' $STEMMAREST_URL/user/$USER > create-user.response
+fi < $USER_FILE
+
 #create tradition (output folder name)
-TRADITION_NAME="auto_docker_$(basename $OUTPUT)"
-curl --request POST --form "name=$TRADITION_NAME" --form "public=no" --form "userId=user@example.org" --form "empty=no" $STEMMAREST_URL/tradition > create-tradition.response
+TRADITION_NAME="$(date +%F)"
+curl --request POST --form "name=$TRADITION_NAME" --form "public=no" --form "userId=$USER" --form "empty=no" $STEMMAREST_URL/tradition > create-tradition.response
 
 TRADITION_ID=`jq ".tradId" create-tradition.response | sed s/\"//g`
 
@@ -343,4 +365,4 @@ do
   curl --request POST --form "name=$SECTION_NAME" --form "file=@$i" --form "filetype=cxjson" $STEMMAREST_URL/tradition/$TRADITION_ID/section;
 done
 
-printf "\nDone. Check out the results at $STEMMAREST_URL.\n"
+printf "\nDone. Check out the results at localhost:3000 by connecting with $USER/UserPass.\n"
