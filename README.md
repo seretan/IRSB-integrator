@@ -1,3 +1,5 @@
+Note: This repository is deprecated. The new version lives at [Unilenlac/enlac](https://github.com/unilenlac/enlac)
+---
 # IRSB-integrator
 Pipeline for Digital Scholarly Editing including tokenisation, normalisation ([tpen2tei](https://github.com/seretan/tpen2tei/tree/xmlrich_tokenization)), collation ([CollateX](https://github.com/interedition/collatex)), analysis ([Stemmaweb](https://github.com/seretan/stemmaweb/tree/IRSB) &amp; [Stemmarest](https://github.com/seretan/tradition_repo/tree/IRSB)). From TEI XML transcriptions to variant graph editing in one command.
 
